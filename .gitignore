@@ -4,7 +4,10 @@ node_modules/
 
 # Playground / Testing Files #
 ##############################
-index.html
+/index.html
+
+# App build output
+app/dist/
 
 # Build files #
 ###############
