@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import Controls from './components/Controls';
 import HarmonicGraph from './components/HarmonicGraph';
 import ChordPanel from './components/ChordPanel';
+import SequenceAnalyzer from './components/SequenceAnalyzer';
 import { buildHarmonicField, toTeoriaNote, AVAILABLE_SCALES } from './lib/harmonicField';
 import './App.css';
 
@@ -9,6 +10,7 @@ const DEFAULT_ROOT = 'A';
 const DEFAULT_SCALE = 'minor';
 
 export default function App() {
+  const [activeView, setActiveView] = useState('explorer');
   const [rootNote, setRootNote] = useState(DEFAULT_ROOT);
   const [scaleName, setScaleName] = useState(DEFAULT_SCALE);
   const [selectedChord, setSelectedChord] = useState(null);
@@ -57,40 +59,69 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <div className="app-title">
-          <span className="app-title-main">Explorador Harmônico</span>
+          <span className="app-title-main">Teoria Harmônica</span>
           <span className="app-title-sub">teoria.js</span>
         </div>
-        <div className="header-field-info">
-          Campo de <strong>{rootNote} {scaleLabel}</strong>
-        </div>
-        {history.length > 0 && (
+
+        <nav className="view-tabs">
+          <button
+            className={`tab-btn ${activeView === 'explorer' ? 'active' : ''}`}
+            onClick={() => setActiveView('explorer')}
+          >
+            Explorador
+          </button>
+          <button
+            className={`tab-btn ${activeView === 'analyzer' ? 'active' : ''}`}
+            onClick={() => setActiveView('analyzer')}
+          >
+            Analisador
+          </button>
+        </nav>
+
+        {activeView === 'explorer' && (
+          <div className="header-field-info">
+            Campo de <strong>{rootNote} {scaleLabel}</strong>
+          </div>
+        )}
+
+        {activeView === 'explorer' && history.length > 0 && (
           <button className="back-btn" onClick={handleBack}>
             ← Voltar
           </button>
         )}
       </header>
 
-      <Controls rootNote={rootNote} scaleName={scaleName} onChange={handleChange} />
+      {activeView === 'explorer' && (
+        <Controls rootNote={rootNote} scaleName={scaleName} onChange={handleChange} />
+      )}
 
       <main className="app-main">
-        <div className="graph-container">
-          {field ? (
-            <HarmonicGraph
-              field={field}
-              selectedId={selectedChord?.id}
-              onSelect={handleSelectChord}
-            />
-          ) : (
-            <div className="graph-error">Erro ao construir o campo harmônico.</div>
-          )}
-        </div>
-        <aside className="panel-container">
-          <ChordPanel
-            chord={selectedChord}
-            field={field}
-            onNavigate={handleNavigate}
-          />
-        </aside>
+        {activeView === 'explorer' ? (
+          <>
+            <div className="graph-container">
+              {field ? (
+                <HarmonicGraph
+                  field={field}
+                  selectedId={selectedChord?.id}
+                  onSelect={handleSelectChord}
+                />
+              ) : (
+                <div className="graph-error">Erro ao construir o campo harmônico.</div>
+              )}
+            </div>
+            <aside className="panel-container">
+              <ChordPanel
+                chord={selectedChord}
+                field={field}
+                onNavigate={handleNavigate}
+              />
+            </aside>
+          </>
+        ) : (
+          <div className="analyzer-container">
+            <SequenceAnalyzer />
+          </div>
+        )}
       </main>
     </div>
   );
