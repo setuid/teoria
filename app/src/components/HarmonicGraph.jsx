@@ -17,7 +17,13 @@ const LINK_STYLE = {
 const NODE_R = 38;
 const SELECTED_R = 44;
 
-export default function HarmonicGraph({ field, selectedId, onSelect }) {
+function getFontSize(name) {
+  if (name.length >= 6) return '10px';
+  if (name.length >= 4) return '12px';
+  return '16px';
+}
+
+export default function HarmonicGraph({ field, selectedId, onSelect, useTetrads }) {
   const svgRef = useRef(null);
 
   useEffect(() => {
@@ -79,6 +85,8 @@ export default function HarmonicGraph({ field, selectedId, onSelect }) {
       const isSelected = node.id === selectedId;
       const r = isSelected ? SELECTED_R : NODE_R;
       const color = QUALITY_COLOR[node.quality] || '#aaa';
+      const displayName = useTetrads ? node.name7 : node.id;
+      const displayRoman = useTetrads ? node.roman7 : node.roman;
 
       const nodeG = g.append('g')
         .attr('transform', `translate(${node.x},${node.y})`)
@@ -106,20 +114,20 @@ export default function HarmonicGraph({ field, selectedId, onSelect }) {
       nodeG.append('text')
         .attr('text-anchor', 'middle')
         .attr('dy', '-8px')
-        .attr('font-size', '11px')
+        .attr('font-size', '10px')
         .attr('fill', 'rgba(255,255,255,0.75)')
         .attr('font-family', 'sans-serif')
-        .text(node.roman);
+        .text(displayRoman);
 
       // Chord name (center)
       nodeG.append('text')
         .attr('text-anchor', 'middle')
         .attr('dy', '8px')
-        .attr('font-size', node.id.length > 3 ? '13px' : '16px')
+        .attr('font-size', getFontSize(displayName))
         .attr('fill', '#fff')
         .attr('font-weight', 'bold')
         .attr('font-family', 'sans-serif')
-        .text(node.id);
+        .text(displayName);
     });
 
     // Legend
@@ -136,7 +144,7 @@ export default function HarmonicGraph({ field, selectedId, onSelect }) {
         .attr('font-family', 'sans-serif').text(item.label);
     });
 
-  }, [field, selectedId]);
+  }, [field, selectedId, useTetrads]);
 
   return (
     <svg

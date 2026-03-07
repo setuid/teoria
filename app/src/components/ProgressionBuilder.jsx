@@ -3,14 +3,25 @@ import { getSuggestions } from '../lib/chordSuggestions';
 import { AVAILABLE_SCALES } from '../lib/harmonicField';
 
 const QUALITY_LABEL = {
-  major: 'Maior',
-  minor: 'Menor',
+  major:      'Maior',
+  minor:      'Menor',
   diminished: 'Diminuto',
-  augmented: 'Aumentado',
-  dominant7: 'Dom7',
+  augmented:  'Aumentado',
+  dominant7:  'Dom7',
 };
 
-export default function ProgressionBuilder({ field, rootNote, scaleName }) {
+const QUALITY7_LABEL = {
+  maj7:      'maj7',
+  dominant7: 'Dom7',
+  minor7:    'm7',
+  minMaj7:   'mMaj7',
+  halfDim7:  'ø7',
+  dim7:      '°7',
+  augMaj7:   '+Maj7',
+  aug7:      '+7',
+};
+
+export default function ProgressionBuilder({ field, rootNote, scaleName, useTetrads }) {
   const [progression, setProgression] = useState([]);
   const [activeChord, setActiveChord] = useState(null);
 
@@ -45,6 +56,19 @@ export default function ProgressionBuilder({ field, rootNote, scaleName }) {
     setActiveChord(null);
   }
 
+  function chordDisplayName(node) {
+    return useTetrads ? node.name7 : node.id;
+  }
+
+  function chordDisplayRoman(node) {
+    return useTetrads ? node.roman7 : node.roman;
+  }
+
+  function chordQualityLabel(node) {
+    if (useTetrads) return QUALITY7_LABEL[node.quality7] || QUALITY_LABEL[node.quality];
+    return QUALITY_LABEL[node.quality];
+  }
+
   const isStarted = progression.length > 0;
 
   return (
@@ -68,11 +92,11 @@ export default function ProgressionBuilder({ field, rootNote, scaleName }) {
               key={node.id}
               className={`pb-chord-card pb-chord-${node.quality} ${activeChord?.id === node.id && activeChord?.degree === node.degree ? 'pb-chord-active' : ''}`}
               onClick={() => isStarted ? addChord(node) : startWithChord(node)}
-              title={isStarted ? `Adicionar ${node.id} à progressão` : `Começar com ${node.id}`}
+              title={isStarted ? `Adicionar ${chordDisplayName(node)} à progressão` : `Começar com ${chordDisplayName(node)}`}
             >
-              <span className="pb-chord-roman">{node.roman}</span>
-              <span className="pb-chord-name">{node.id}</span>
-              <span className="pb-chord-quality">{QUALITY_LABEL[node.quality]}</span>
+              <span className="pb-chord-roman">{chordDisplayRoman(node)}</span>
+              <span className="pb-chord-name">{chordDisplayName(node)}</span>
+              <span className="pb-chord-quality">{chordQualityLabel(node)}</span>
             </button>
           ))}
         </div>
@@ -87,7 +111,7 @@ export default function ProgressionBuilder({ field, rootNote, scaleName }) {
           <h3 className="pb-section-title">
             Próximos acordes a partir de{' '}
             <span className={`pb-active-badge pb-chord-${activeChord.quality || 'major'}`}>
-              {activeChord.roman} — {activeChord.id}
+              {chordDisplayRoman(activeChord)} — {chordDisplayName(activeChord)}
             </span>
           </h3>
 
@@ -98,7 +122,7 @@ export default function ProgressionBuilder({ field, rootNote, scaleName }) {
                 <span key={i} className="pb-prog-hint">
                   🎵 Você está dentro de uma progressão <strong>{h.name}</strong>
                   {h.suggestedDegree !== undefined && (
-                    <> — próximo sugerido: <strong>{nodes[h.suggestedDegree]?.id}</strong></>
+                    <> — próximo sugerido: <strong>{chordDisplayName(nodes[h.suggestedDegree])}</strong></>
                   )}
                 </span>
               ))}
@@ -117,8 +141,8 @@ export default function ProgressionBuilder({ field, rootNote, scaleName }) {
                     onClick={() => addChord(s.node)}
                     title={s.label}
                   >
-                    <span className="pb-sug-roman">{s.node.roman}</span>
-                    <span className="pb-sug-name">{s.node.id}</span>
+                    <span className="pb-sug-roman">{chordDisplayRoman(s.node)}</span>
+                    <span className="pb-sug-name">{chordDisplayName(s.node)}</span>
                     <span className="pb-sug-label">{s.label}</span>
                   </button>
                 ))}
@@ -135,9 +159,9 @@ export default function ProgressionBuilder({ field, rootNote, scaleName }) {
                     className={`pb-suggestion pb-chord-${node.quality}`}
                     onClick={() => addChord(node)}
                   >
-                    <span className="pb-sug-roman">{node.roman}</span>
-                    <span className="pb-sug-name">{node.id}</span>
-                    <span className="pb-sug-label">{QUALITY_LABEL[node.quality]}</span>
+                    <span className="pb-sug-roman">{chordDisplayRoman(node)}</span>
+                    <span className="pb-sug-name">{chordDisplayName(node)}</span>
+                    <span className="pb-sug-label">{chordQualityLabel(node)}</span>
                   </button>
                 ))}
               </div>
@@ -155,8 +179,8 @@ export default function ProgressionBuilder({ field, rootNote, scaleName }) {
                     title={s.label}
                   >
                     <span className="pb-sug-roman">{s.roman}</span>
-                    <span className="pb-sug-name">{s.id}</span>
-                    <span className="pb-sug-label">→ {s.resolvesToId}</span>
+                    <span className="pb-sug-name">{useTetrads ? s.id + '7' : s.id}</span>
+                    <span className="pb-sug-label">→ {useTetrads ? (s.resolvesToNode?.name7 || s.resolvesToId) : s.resolvesToId}</span>
                   </button>
                 ))}
               </div>
@@ -179,10 +203,10 @@ export default function ProgressionBuilder({ field, rootNote, scaleName }) {
                   <button
                     className={`pb-timeline-chord pb-chord-${chord.quality || 'major'} ${i === progression.length - 1 ? 'pb-timeline-active' : ''}`}
                     onClick={() => selectInProgression(i)}
-                    title={`${chord.roman} — ${chord.id}${i === progression.length - 1 ? ' (acorde atual)' : '\nClique para voltar a este ponto'}`}
+                    title={`${chordDisplayRoman(chord)} — ${chordDisplayName(chord)}${i === progression.length - 1 ? ' (acorde atual)' : '\nClique para voltar a este ponto'}`}
                   >
-                    <span className="pb-tl-roman">{chord.roman || chord.id}</span>
-                    <span className="pb-tl-name">{chord.id}</span>
+                    <span className="pb-tl-roman">{chordDisplayRoman(chord) || chordDisplayName(chord)}</span>
+                    <span className="pb-tl-name">{chordDisplayName(chord)}</span>
                   </button>
                   {i < progression.length - 1 && (
                     <span className="pb-arrow">→</span>
@@ -199,7 +223,7 @@ export default function ProgressionBuilder({ field, rootNote, scaleName }) {
           </div>
           {progression.length > 1 && (
             <div className="pb-timeline-text">
-              {progression.map(c => c.id).join(' → ')}
+              {progression.map(c => chordDisplayName(c)).join(' → ')}
             </div>
           )}
         </section>

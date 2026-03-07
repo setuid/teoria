@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { parseSequence, analyzeSequence, SCALE_LABELS } from '../lib/chordAnalysis';
+import { parseSequence, analyzeSequence, generateExplanation, SCALE_LABELS } from '../lib/chordAnalysis';
 
 const FUNCTION_LABEL = { T: 'Tônica', S: 'Subdominante', D: 'Dominante' };
 const FUNCTION_CLASS = { T: 'tonic', S: 'subdominant', D: 'dominant' };
@@ -70,6 +70,7 @@ export default function SequenceAnalyzer() {
       </div>
 
       {result && <AnalysisResult result={result} />}
+      {result && <ExplanationBox result={result} />}
     </div>
   );
 }
@@ -153,6 +154,36 @@ function OtherKey({ result }) {
       <span className="other-key-name">{result.key}</span>
       <span className="other-key-romans">{romans}</span>
       <span className="other-key-score">{pct}%</span>
+    </div>
+  );
+}
+
+function ExplanationBox({ result }) {
+  const paragraphs = generateExplanation(result);
+  if (!paragraphs || paragraphs.length === 0) return null;
+
+  return (
+    <div className="explanation-box">
+      <div className="explanation-title">Por que esta análise?</div>
+      {paragraphs.map((p, i) => {
+        // Paragraphs that contain bullet points are rendered differently
+        if (p.includes('\n•')) {
+          const [header, ...lines] = p.split('\n');
+          return (
+            <div key={i} className="explanation-paragraph">
+              {header && <p className="explanation-section-header">{header}</p>}
+              <ul className="explanation-list">
+                {lines.map((line, j) => (
+                  <li key={j}>{line.replace(/^• /, '')}</li>
+                ))}
+              </ul>
+            </div>
+          );
+        }
+        return (
+          <p key={i} className="explanation-paragraph">{p}</p>
+        );
+      })}
     </div>
   );
 }
