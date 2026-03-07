@@ -3,6 +3,7 @@ import Controls from './components/Controls';
 import HarmonicGraph from './components/HarmonicGraph';
 import ChordPanel from './components/ChordPanel';
 import SequenceAnalyzer from './components/SequenceAnalyzer';
+import ProgressionBuilder from './components/ProgressionBuilder';
 import { buildHarmonicField, toTeoriaNote, AVAILABLE_SCALES } from './lib/harmonicField';
 import './App.css';
 
@@ -71,6 +72,12 @@ export default function App() {
             Explorador
           </button>
           <button
+            className={`tab-btn ${activeView === 'builder' ? 'active' : ''}`}
+            onClick={() => setActiveView('builder')}
+          >
+            Construtor
+          </button>
+          <button
             className={`tab-btn ${activeView === 'analyzer' ? 'active' : ''}`}
             onClick={() => setActiveView('analyzer')}
           >
@@ -78,7 +85,7 @@ export default function App() {
           </button>
         </nav>
 
-        {activeView === 'explorer' && (
+        {(activeView === 'explorer' || activeView === 'builder') && (
           <div className="header-field-info">
             Campo de <strong>{rootNote} {scaleLabel}</strong>
           </div>
@@ -91,7 +98,7 @@ export default function App() {
         )}
       </header>
 
-      {activeView === 'explorer' && (
+      {(activeView === 'explorer' || activeView === 'builder') && (
         <Controls rootNote={rootNote} scaleName={scaleName} onChange={handleChange} />
       )}
 
@@ -117,6 +124,14 @@ export default function App() {
               />
             </aside>
           </>
+        ) : activeView === 'builder' ? (
+          <div className="builder-container">
+            <ProgressionBuilder
+              field={field}
+              rootNote={rootNote}
+              scaleName={scaleName}
+            />
+          </div>
         ) : (
           <div className="analyzer-container">
             <SequenceAnalyzer />
