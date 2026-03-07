@@ -16,6 +16,7 @@ export default function App() {
   const [scaleName, setScaleName] = useState(DEFAULT_SCALE);
   const [selectedChord, setSelectedChord] = useState(null);
   const [history, setHistory] = useState([]);
+  const [useTetrads, setUseTetrads] = useState(true);
 
   const field = useMemo(() => {
     try {
@@ -99,7 +100,13 @@ export default function App() {
       </header>
 
       {(activeView === 'explorer' || activeView === 'builder') && (
-        <Controls rootNote={rootNote} scaleName={scaleName} onChange={handleChange} />
+        <Controls
+          rootNote={rootNote}
+          scaleName={scaleName}
+          onChange={handleChange}
+          useTetrads={useTetrads}
+          onToggleTetrads={() => setUseTetrads(t => !t)}
+        />
       )}
 
       <main className="app-main">
@@ -111,6 +118,7 @@ export default function App() {
                   field={field}
                   selectedId={selectedChord?.id}
                   onSelect={handleSelectChord}
+                  useTetrads={useTetrads}
                 />
               ) : (
                 <div className="graph-error">Erro ao construir o campo harmônico.</div>
@@ -121,6 +129,7 @@ export default function App() {
                 chord={selectedChord}
                 field={field}
                 onNavigate={handleNavigate}
+                useTetrads={useTetrads}
               />
             </aside>
           </>
@@ -130,6 +139,7 @@ export default function App() {
               field={field}
               rootNote={rootNote}
               scaleName={scaleName}
+              useTetrads={useTetrads}
             />
           </div>
         ) : (

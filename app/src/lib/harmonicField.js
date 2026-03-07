@@ -2,7 +2,7 @@ import teoria from './teoria';
 
 const ROMAN_NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
 
-// Determine chord quality by stacking diatonic thirds
+// Determine triad quality by stacking diatonic thirds
 function getDiatonicChordQuality(scaleNotes, degreeIndex) {
   const root = scaleNotes[degreeIndex];
   const third = scaleNotes[(degreeIndex + 2) % 7];
@@ -19,6 +19,25 @@ function getDiatonicChordQuality(scaleNotes, degreeIndex) {
   return 'major';
 }
 
+// Determine tetrad (7th chord) quality by combining triad quality + 7th interval
+function getDiatonicChord7Quality(scaleNotes, degreeIndex, triadQuality) {
+  const root = scaleNotes[degreeIndex];
+  const seventh = scaleNotes[(degreeIndex + 6) % 7];
+
+  const rootKey = root.key();
+  const seventhSemitones = ((seventh.key() - rootKey) % 12 + 12) % 12;
+
+  if (triadQuality === 'major'     && seventhSemitones === 11) return 'maj7';
+  if (triadQuality === 'major'     && seventhSemitones === 10) return 'dominant7';
+  if (triadQuality === 'minor'     && seventhSemitones === 10) return 'minor7';
+  if (triadQuality === 'minor'     && seventhSemitones === 11) return 'minMaj7';
+  if (triadQuality === 'diminished'&& seventhSemitones === 10) return 'halfDim7';
+  if (triadQuality === 'diminished'&& seventhSemitones === 9)  return 'dim7';
+  if (triadQuality === 'augmented' && seventhSemitones === 11) return 'augMaj7';
+  if (triadQuality === 'augmented' && seventhSemitones === 10) return 'aug7';
+  return triadQuality;
+}
+
 function qualitySymbol(quality) {
   switch (quality) {
     case 'major': return '';
@@ -29,12 +48,44 @@ function qualitySymbol(quality) {
   }
 }
 
+function quality7Symbol(quality7) {
+  switch (quality7) {
+    case 'maj7':      return 'maj7';
+    case 'dominant7': return '7';
+    case 'minor7':    return 'm7';
+    case 'minMaj7':   return 'mMaj7';
+    case 'halfDim7':  return 'm7b5';
+    case 'dim7':      return 'dim7';
+    case 'augMaj7':   return 'augMaj7';
+    case 'aug7':      return 'aug7';
+    default:          return '';
+  }
+}
+
 function toRoman(degree, quality) {
   const base = ROMAN_NUMERALS[degree];
   const lower = quality === 'minor' || quality === 'diminished';
   const numeral = lower ? base.toLowerCase() : base;
   const suffix = quality === 'diminished' ? '°' : quality === 'augmented' ? '+' : '';
   return numeral + suffix;
+}
+
+function toRoman7(degree, quality, quality7) {
+  const base = ROMAN_NUMERALS[degree];
+  const lower = quality === 'minor' || quality === 'diminished';
+  const numeral = lower ? base.toLowerCase() : base;
+
+  switch (quality7) {
+    case 'maj7':      return numeral + 'maj7';
+    case 'dominant7': return numeral + '7';
+    case 'minor7':    return numeral + '7';
+    case 'minMaj7':   return numeral + 'Maj7';
+    case 'halfDim7':  return numeral + 'ø7';
+    case 'dim7':      return numeral + '°7';
+    case 'augMaj7':   return numeral + '+Maj7';
+    case 'aug7':      return numeral + '+7';
+    default:          return toRoman(degree, quality);
+  }
 }
 
 export function buildHarmonicField(rootNote, scaleName) {
@@ -50,27 +101,44 @@ export function buildHarmonicField(rootNote, scaleName) {
   const nodes = [];
   const links = [];
 
-  // Build 7 chord nodes
+  // Build 7 chord nodes (triads + tetrads)
   for (let i = 0; i < 7; i++) {
     const noteObj = scaleNotes[i];
     const quality = getDiatonicChordQuality(scaleNotes, i);
+    const quality7 = getDiatonicChord7Quality(scaleNotes, i, quality);
+
     const symbol = qualitySymbol(quality);
+    const symbol7 = quality7Symbol(quality7);
+
     const chordName = noteObj.name.toUpperCase() + noteObj.accidental.sign + symbol;
+    const chordName7 = noteObj.name.toUpperCase() + noteObj.accidental.sign + symbol7;
+
     const roman = toRoman(i, quality);
+    const roman7 = toRoman7(i, quality, quality7);
+
     const chordNotes = [
       scaleNotes[i].toString(true),
       scaleNotes[(i + 2) % 7].toString(true),
       scaleNotes[(i + 4) % 7].toString(true),
     ];
+    const chordNotes7 = [
+      ...chordNotes,
+      scaleNotes[(i + 6) % 7].toString(true),
+    ];
 
     nodes.push({
       id: chordName,
+      name7: chordName7,
       degree: i,
       quality,
+      quality7,
       roman,
+      roman7,
       root: noteObj.name + noteObj.accidental.sign,
       notes: chordNotes,
+      notes7: chordNotes7,
       symbol,
+      symbol7,
     });
   }
 

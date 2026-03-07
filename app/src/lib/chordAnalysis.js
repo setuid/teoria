@@ -182,3 +182,91 @@ export function analyzeSequence(chords) {
 
   return { best, topKeys, others };
 }
+
+// ─── Explainability ──────────────────────────────────────────────────────────
+
+const FUNCTION_LABEL = { T: 'Tônica', S: 'Subdominante', D: 'Dominante' };
+
+const FUNCTION_EXPLANATION = {
+  T: 'ponto de repouso e estabilidade harmônica — a "casa" da tonalidade',
+  S: 'prepara o movimento para a Dominante ou retorna suavemente à Tônica',
+  D: 'cria tensão que quer resolver em direção à Tônica',
+};
+
+const SCALE_EXPLANATION = {
+  major:      'A escala Maior (Jônico) tem sonoridade brilhante e alegre. Seus graus são: I Maior, ii menor, iii menor, IV Maior, V Maior (dominante), vi menor, vii diminuto.',
+  minor:      'A escala Menor Natural (Eólio) é melancólica e introspectiva — a mais usada no pop, rock e MPB. Seus graus: i menor, ii diminuto, bIII Maior, iv menor, v menor, bVI Maior, bVII Maior.',
+  dorian:     'O modo Dórico é um menor com o 6º grau elevado, dando sonoridade jazzística e mais aberta. Muito usado no jazz, funk e música celta.',
+  phrygian:   'O modo Frígio tem o 2º grau abaixado (bII), criando sonoridade tensa e dramática. Popular no flamenco, metal e música árabe.',
+  lydian:     'O modo Lídio tem o 4º grau elevado (#IV), resultando em sonoridade etérea e "flutuante". Frequente em trilhas sonoras e música new age.',
+  mixolydian: 'O modo Mixolídio é como uma escala Maior com o 7º grau abaixado (bVII), criando um sabor bluesy. Muito usado no rock, blues e música celta.',
+  locrian:    'O modo Lócrio tem sonoridade extremamente instável, com quinta diminuta no I grau. Raramente usado como campo harmônico principal.',
+};
+
+export function generateExplanation(result) {
+  const { best, topKeys } = result;
+  if (!best) return null;
+
+  const paragraphs = [];
+
+  // 1. Tonality detection
+  const pct = Math.round(best.score * 100);
+  if (best.score === 1) {
+    paragraphs.push(
+      `Todos os ${best.total} acordes pertencem ao campo harmônico de ${best.key}, confirmando que a progressão é 100% diatônica a essa tonalidade.`
+    );
+  } else {
+    paragraphs.push(
+      `${best.diatonicCount} de ${best.total} acordes (${pct}%) pertencem ao campo harmônico de ${best.key}, tornando-a a tonalidade mais provável. Os demais acordes são não-diatônicos e explicados abaixo.`
+    );
+  }
+
+  // 2. Alternatives
+  const alts = topKeys.filter(k => k.key !== best.key);
+  if (alts.length > 0) {
+    const altNames = alts.map(k => k.key).join(', ');
+    paragraphs.push(
+      `A progressão também encaixa perfeitamente em ${altNames}. Isso ocorre porque tonalidades relativas ou paralelas compartilham os mesmos acordes diatônicos — a escolha final depende do contexto melódico e do acorde de repouso.`
+    );
+  }
+
+  // 3. Scale/mode explanation
+  const scaleExp = SCALE_EXPLANATION[best.scaleName];
+  if (scaleExp) {
+    paragraphs.push(`Sobre o modo ${SCALE_LABELS[best.scaleName]}: ${scaleExp}`);
+  }
+
+  // 4. Chord-by-chord
+  const chordLines = [];
+  for (const cr of best.chordResults) {
+    const name = cr.chord.original;
+    if (cr.isDiatonic) {
+      const fn = cr.function;
+      const fnLabel = fn ? FUNCTION_LABEL[fn] : 'Passagem';
+      const fnExp = fn ? FUNCTION_EXPLANATION[fn] : 'acorde de passagem dentro do campo harmônico';
+      chordLines.push(`${name} (${cr.roman}) — ${fnLabel}: ${fnExp}.`);
+    } else {
+      const ann = cr.annotation ?? 'não-diatônico';
+      if (ann.startsWith('V/')) {
+        const target = ann.slice(2);
+        chordLines.push(
+          `${name} — Dominante Secundário ${ann}: acorde maior que resolve um quinto abaixo para o grau ${target} do campo. Esse recurso cria tensão cromática temporária sem sair da tonalidade principal — é como uma "mini-cadência" interna.`
+        );
+      } else if (ann.includes('emp.')) {
+        const fromScale = ann.replace('emp. de ', '');
+        chordLines.push(
+          `${name} — Empréstimo modal (${ann}): acorde diatônico na tonalidade paralela de ${best.rootNote} ${fromScale}. O empréstimo modal é uma técnica comum para adicionar cor harmônica e emocional sem perder o centro tonal.`
+        );
+      } else {
+        chordLines.push(
+          `${name} — Acorde não-diatônico: não pertence ao campo de ${best.key} nem foi identificado como dominante secundário ou empréstimo modal. Pode ser uma modulação passageira ou uma substituição tritonante.`
+        );
+      }
+    }
+  }
+  if (chordLines.length > 0) {
+    paragraphs.push('Análise acorde por acorde:\n' + chordLines.map(l => '• ' + l).join('\n'));
+  }
+
+  return paragraphs;
+}

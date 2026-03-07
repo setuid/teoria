@@ -1,6 +1,6 @@
 import { AVAILABLE_NOTES, AVAILABLE_SCALES } from '../lib/harmonicField';
 
-export default function Controls({ rootNote, scaleName, onChange }) {
+export default function Controls({ rootNote, scaleName, onChange, useTetrads, onToggleTetrads }) {
   return (
     <div className="controls">
       <div className="controls-title">Campo Harmônico</div>
@@ -28,6 +28,17 @@ export default function Controls({ rootNote, scaleName, onChange }) {
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
+        </div>
+        <div className="control-group control-group-toggle">
+          <label className="toggle-label" title="Exibir acordes como tétrades (com 7ª) em vez de tríades">
+            <input
+              type="checkbox"
+              checked={useTetrads}
+              onChange={onToggleTetrads}
+              className="toggle-checkbox"
+            />
+            <span className="toggle-text">Tétrades (7ª)</span>
+          </label>
         </div>
       </div>
     </div>
