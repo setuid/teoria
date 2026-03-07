@@ -1,20 +1,41 @@
 {
   "name": "teoria",
-  "version": "0.1.0",
+  "version": "2.5.0",
   "description": "Music theory for JavaScript",
-  "homepage": "https://github.com/saebekassebil/teoria",
+  "homepage": "http://saebekassebil.github.com/teoria",
+  "keywords": [
+    "music",
+    "theory",
+    "jazz",
+    "classical",
+    "chord"
+  ],
+  "main": "./index.js",
   "author": {
     "name": "Jakob Miland <saebekassebil>",
     "email": "saebekassebil@gmail.com",
     "url": "https://github.com/saebekassebil"
   },
-
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/saebekassebil/teoria"
+  },
+  "license": "MIT",
+  "scripts": {
+    "test": "vows --dot-matric test/*",
+    "lint": "jshint index.js lib/",
+    "bundle": "browserify index.js --standalone teoria > teoria.js",
+    "build": "npm run lint && npm test && npm run bundle"
+  },
   "devDependencies": {
-    "jake": ">=0.2.0",
-    "colors": ">=0.6.0",
-    "mingler": ">=0.1.3",
     "jshint": ">=0.9.0",
-    "uglify-js": "~1",
     "vows": ">= 0.6.0"
+  },
+  "dependencies": {
+    "daccord": "^1.0.1",
+    "helmholtz": "^2.0.1",
+    "interval-coords": "^1.1.1",
+    "pitch-fq": "^1.0.0",
+    "scientific-notation": "^1.0.2"
   }
 }
