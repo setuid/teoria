@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { getSuggestions } from '../lib/chordSuggestions';
 import { AVAILABLE_SCALES } from '../lib/harmonicField';
+import { getBorrowedGroups } from '../lib/modalBorrowing';
 
 const QUALITY_LABEL = {
   major:      'Maior',
@@ -24,6 +25,7 @@ const QUALITY7_LABEL = {
 export default function ProgressionBuilder({ field, rootNote, scaleName, useTetrads }) {
   const [progression, setProgression] = useState([]);
   const [activeChord, setActiveChord] = useState(null);
+  const [activeBorrowMode, setActiveBorrowMode] = useState(null); // set after first render
 
   const scaleLabel = AVAILABLE_SCALES.find(s => s.value === scaleName)?.label || scaleName;
 
@@ -31,6 +33,14 @@ export default function ProgressionBuilder({ field, rootNote, scaleName, useTetr
     if (!activeChord || !field) return null;
     return getSuggestions(activeChord, field, progression.slice(0, -1));
   }, [activeChord, field, progression]);
+
+  const borrowedGroups = useMemo(() => {
+    return getBorrowedGroups(rootNote, scaleName);
+  }, [rootNote, scaleName]);
+
+  // Default to first group when groups change
+  const activeBorrowGroup = borrowedGroups.find(g => g.scale === activeBorrowMode)
+    ?? borrowedGroups[0];
 
   if (!field) return null;
   const { nodes } = field;
@@ -81,9 +91,7 @@ export default function ProgressionBuilder({ field, rootNote, scaleName, useTetr
             Campo Harmônico — <strong>{rootNote} {scaleLabel}</strong>
           </h3>
           {isStarted && (
-            <span className="pb-field-hint">
-              {isStarted ? 'Clique para adicionar diretamente à progressão' : ''}
-            </span>
+            <span className="pb-field-hint">Clique para adicionar diretamente à progressão</span>
           )}
         </div>
         <div className="pb-field-chords">
@@ -105,6 +113,55 @@ export default function ProgressionBuilder({ field, rootNote, scaleName, useTetr
         )}
       </section>
 
+      {/* Modal Borrowing Panel */}
+      <section className="pb-borrow">
+        <div className="pb-borrow-header">
+          <h3 className="pb-section-title pb-borrow-title">
+            Empréstimos Modais
+            <span className="pb-borrow-subtitle">acordes de modos paralelos de {rootNote}</span>
+          </h3>
+          <div className="pb-borrow-tabs">
+            {borrowedGroups.map(group => (
+              <button
+                key={group.scale}
+                className={`pb-borrow-tab ${activeBorrowGroup?.scale === group.scale ? 'pb-borrow-tab-active' : ''}`}
+                onClick={() => setActiveBorrowMode(group.scale)}
+                title={group.label}
+              >
+                {group.shortLabel}
+                {group.exclusiveCount > 0 && (
+                  <span className="pb-borrow-tab-count">{group.exclusiveCount}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {activeBorrowGroup && (
+          <div className="pb-borrow-body">
+            <div className="pb-borrow-legend">
+              <span className="pb-borrow-legend-exclusive">exclusivo</span>
+              <span className="pb-borrow-legend-shared">compartilhado</span>
+              <span className="pb-borrow-legend-text">— clique para adicionar à progressão</span>
+            </div>
+            <div className="pb-borrow-chords">
+              {activeBorrowGroup.nodes.map(node => (
+                <button
+                  key={node.id + '-' + node.degree}
+                  className={`pb-borrow-card pb-chord-${node.quality} ${node.isExclusive ? 'pb-borrow-exclusive' : 'pb-borrow-shared'}`}
+                  onClick={() => isStarted ? addChord(node) : startWithChord(node)}
+                  title={`${node.isExclusive ? 'Exclusivo de' : 'Compartilhado com'} ${activeBorrowGroup.label}`}
+                >
+                  <span className="pb-chord-roman">{chordDisplayRoman(node)}</span>
+                  <span className="pb-chord-name">{chordDisplayName(node)}</span>
+                  <span className="pb-chord-quality">{chordQualityLabel(node)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* Suggestions Panel */}
       {suggestions && activeChord && (
         <section className="pb-suggestions">
@@ -113,6 +170,9 @@ export default function ProgressionBuilder({ field, rootNote, scaleName, useTetr
             <span className={`pb-active-badge pb-chord-${activeChord.quality || 'major'}`}>
               {chordDisplayRoman(activeChord)} — {chordDisplayName(activeChord)}
             </span>
+            {activeChord.isBorrowed && (
+              <span className="pb-borrowed-source-badge">empr. {activeChord.borrowedFromShort}</span>
+            )}
           </h3>
 
           {/* Progression hints */}
@@ -201,12 +261,15 @@ export default function ProgressionBuilder({ field, rootNote, scaleName, useTetr
               {progression.map((chord, i) => (
                 <span key={i} className="pb-timeline-item">
                   <button
-                    className={`pb-timeline-chord pb-chord-${chord.quality || 'major'} ${i === progression.length - 1 ? 'pb-timeline-active' : ''}`}
+                    className={`pb-timeline-chord pb-chord-${chord.quality || 'major'} ${i === progression.length - 1 ? 'pb-timeline-active' : ''} ${chord.isBorrowed ? 'pb-timeline-borrowed' : ''}`}
                     onClick={() => selectInProgression(i)}
-                    title={`${chordDisplayRoman(chord)} — ${chordDisplayName(chord)}${i === progression.length - 1 ? ' (acorde atual)' : '\nClique para voltar a este ponto'}`}
+                    title={`${chordDisplayRoman(chord)} — ${chordDisplayName(chord)}${chord.isBorrowed ? ` (empr. ${chord.borrowedFromShort})` : ''}${i === progression.length - 1 ? '\n(acorde atual)' : '\nClique para voltar a este ponto'}`}
                   >
                     <span className="pb-tl-roman">{chordDisplayRoman(chord) || chordDisplayName(chord)}</span>
                     <span className="pb-tl-name">{chordDisplayName(chord)}</span>
+                    {chord.isBorrowed && (
+                      <span className="pb-tl-borrow-badge">{chord.borrowedFromShort}</span>
+                    )}
                   </button>
                   {i < progression.length - 1 && (
                     <span className="pb-arrow">→</span>
@@ -223,7 +286,10 @@ export default function ProgressionBuilder({ field, rootNote, scaleName, useTetr
           </div>
           {progression.length > 1 && (
             <div className="pb-timeline-text">
-              {progression.map(c => chordDisplayName(c)).join(' → ')}
+              {progression.map(c => {
+                const name = chordDisplayName(c);
+                return c.isBorrowed ? `${name}[${c.borrowedFromShort}]` : name;
+              }).join(' → ')}
             </div>
           )}
         </section>

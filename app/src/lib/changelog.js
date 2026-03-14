@@ -1,6 +1,26 @@
-export const CURRENT_VERSION = '1.3.1';
+export const CURRENT_VERSION = '1.4.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.4.0',
+    date: '2026-03-14',
+    type: 'feature',
+    summary: 'Empréstimos Modais no Construtor',
+    changes: [
+      {
+        type: 'feature',
+        text: 'Nova seção "Empréstimos Modais" permanente no Construtor: veja acordes de todos os 7 modos paralelos (Dórico, Frígio, Lídio, Mixolídio, Eólio, Lócrio).',
+      },
+      {
+        type: 'feature',
+        text: 'Acordes exclusivos de cada modo destacados em roxo; acordes compartilhados com o tom atual aparecem em opacidade reduzida.',
+      },
+      {
+        type: 'feature',
+        text: 'Acordes emprestados na progressão ganham badge colorido (ex: [Dór]) na timeline e no texto exportado.',
+      },
+    ],
+  },
   {
     version: '1.3.1',
     date: '2026-03-14',
