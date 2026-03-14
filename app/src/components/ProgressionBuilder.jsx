@@ -179,7 +179,7 @@ export default function ProgressionBuilder({ field, rootNote, scaleName, useTetr
                     title={s.label}
                   >
                     <span className="pb-sug-roman">{s.roman}</span>
-                    <span className="pb-sug-name">{useTetrads ? s.id + '7' : s.id}</span>
+                    <span className="pb-sug-name">{s.id}</span>
                     <span className="pb-sug-label">→ {useTetrads ? (s.resolvesToNode?.name7 || s.resolvesToId) : s.resolvesToId}</span>
                   </button>
                 ))}
