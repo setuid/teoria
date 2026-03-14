@@ -4,7 +4,9 @@ import HarmonicGraph from './components/HarmonicGraph';
 import ChordPanel from './components/ChordPanel';
 import SequenceAnalyzer from './components/SequenceAnalyzer';
 import ProgressionBuilder from './components/ProgressionBuilder';
+import ChangelogModal from './components/ChangelogModal';
 import { buildHarmonicField, toTeoriaNote, AVAILABLE_SCALES } from './lib/harmonicField';
+import { CURRENT_VERSION } from './lib/changelog';
 import './App.css';
 
 const DEFAULT_ROOT = 'A';
@@ -17,6 +19,7 @@ export default function App() {
   const [selectedChord, setSelectedChord] = useState(null);
   const [history, setHistory] = useState([]);
   const [useTetrads, setUseTetrads] = useState(true);
+  const [showChangelog, setShowChangelog] = useState(false);
 
   const field = useMemo(() => {
     try {
@@ -62,7 +65,10 @@ export default function App() {
       <header className="app-header">
         <div className="app-title">
           <span className="app-title-main">Teoria Harmônica</span>
-          <span className="app-title-sub">teoria.js</span>
+          <button className="app-version-btn" onClick={() => setShowChangelog(true)} title="Ver histórico de versões">
+            <span className="app-title-sub">teoria.js</span>
+            <span className="app-version-tag">v{CURRENT_VERSION}</span>
+          </button>
         </div>
 
         <nav className="view-tabs">
@@ -148,6 +154,8 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {showChangelog && <ChangelogModal onClose={() => setShowChangelog(false)} />}
     </div>
   );
 }
