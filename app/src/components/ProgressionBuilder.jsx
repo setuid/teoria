@@ -3,29 +3,22 @@ import { getSuggestions } from '../lib/chordSuggestions';
 import { AVAILABLE_SCALES } from '../lib/harmonicField';
 import { getBorrowedGroups } from '../lib/modalBorrowing';
 
-const QUALITY_LABEL = {
-  major:      'Maior',
-  minor:      'Menor',
-  diminished: 'Diminuto',
-  augmented:  'Aumentado',
-  dominant7:  'Dom7',
+const QUALITY7_LABEL = {
+  maj7: 'maj7', dominant7: 'Dom7', minor7: 'm7',
+  minMaj7: 'mMaj7', halfDim7: 'ø7', dim7: '°7',
+  augMaj7: '+Maj7', aug7: '+7',
 };
 
-const QUALITY7_LABEL = {
-  maj7:      'maj7',
-  dominant7: 'Dom7',
-  minor7:    'm7',
-  minMaj7:   'mMaj7',
-  halfDim7:  'ø7',
-  dim7:      '°7',
-  augMaj7:   '+Maj7',
-  aug7:      '+7',
+const QUALITY_LABEL = {
+  major: 'Maior', minor: 'Menor', diminished: 'Dim',
+  augmented: 'Aum', dominant7: 'Dom7',
 };
 
 export default function ProgressionBuilder({ field, rootNote, scaleName, useTetrads }) {
   const [progression, setProgression] = useState([]);
   const [activeChord, setActiveChord] = useState(null);
-  const [activeBorrowMode, setActiveBorrowMode] = useState(null); // set after first render
+  const [pickerTab, setPickerTab] = useState('diatonic');
+  const [activeBorrowMode, setActiveBorrowMode] = useState(null);
 
   const scaleLabel = AVAILABLE_SCALES.find(s => s.value === scaleName)?.label || scaleName;
 
@@ -34,20 +27,22 @@ export default function ProgressionBuilder({ field, rootNote, scaleName, useTetr
     return getSuggestions(activeChord, field, progression.slice(0, -1));
   }, [activeChord, field, progression]);
 
-  const borrowedGroups = useMemo(() => {
-    return getBorrowedGroups(rootNote, scaleName);
-  }, [rootNote, scaleName]);
+  const borrowedGroups = useMemo(
+    () => getBorrowedGroups(rootNote, scaleName),
+    [rootNote, scaleName]
+  );
 
-  // Default to first group when groups change
-  const activeBorrowGroup = borrowedGroups.find(g => g.scale === activeBorrowMode)
-    ?? borrowedGroups[0];
+  const activeBorrowGroup =
+    borrowedGroups.find(g => g.scale === activeBorrowMode) ?? borrowedGroups[0];
 
   if (!field) return null;
   const { nodes } = field;
 
-  function startWithChord(node) {
-    setProgression([node]);
-    setActiveChord(node);
+  function chordName(node) { return useTetrads ? node.name7 : node.id; }
+  function chordRoman(node) { return useTetrads ? node.roman7 : node.roman; }
+  function chordQuality(node) {
+    if (useTetrads) return QUALITY7_LABEL[node.quality7] || QUALITY_LABEL[node.quality];
+    return QUALITY_LABEL[node.quality];
   }
 
   function addChord(node) {
@@ -55,245 +50,220 @@ export default function ProgressionBuilder({ field, rootNote, scaleName, useTetr
     setActiveChord(node);
   }
 
-  function selectInProgression(index) {
-    const chord = progression[index];
-    setProgression(p => p.slice(0, index + 1));
-    setActiveChord(chord);
+  function selectAtIndex(i) {
+    setProgression(p => p.slice(0, i + 1));
+    setActiveChord(progression[i]);
   }
 
-  function clearProgression() {
+  function clear() {
     setProgression([]);
     setActiveChord(null);
-  }
-
-  function chordDisplayName(node) {
-    return useTetrads ? node.name7 : node.id;
-  }
-
-  function chordDisplayRoman(node) {
-    return useTetrads ? node.roman7 : node.roman;
-  }
-
-  function chordQualityLabel(node) {
-    if (useTetrads) return QUALITY7_LABEL[node.quality7] || QUALITY_LABEL[node.quality];
-    return QUALITY_LABEL[node.quality];
   }
 
   const isStarted = progression.length > 0;
 
   return (
-    <div className="progression-builder">
+    <div className="pb2">
 
-      {/* Harmonic Field */}
-      <section className="pb-field">
-        <div className="pb-field-header">
-          <h3 className="pb-section-title">
-            Campo Harmônico — <strong>{rootNote} {scaleLabel}</strong>
-          </h3>
+      {/* ===== PROGRESSÃO (topo, proeminente) ===== */}
+      <section className="pb2-prog">
+        <div className="pb2-prog-header">
+          <span className="pb2-label">PROGRESSÃO</span>
           {isStarted && (
-            <span className="pb-field-hint">Clique para adicionar diretamente à progressão</span>
+            <button className="pb2-clear-btn" onClick={clear}>Limpar</button>
           )}
         </div>
-        <div className="pb-field-chords">
-          {nodes.map(node => (
-            <button
-              key={node.id}
-              className={`pb-chord-card pb-chord-${node.quality} ${activeChord?.id === node.id && activeChord?.degree === node.degree ? 'pb-chord-active' : ''}`}
-              onClick={() => isStarted ? addChord(node) : startWithChord(node)}
-              title={isStarted ? `Adicionar ${chordDisplayName(node)} à progressão` : `Começar com ${chordDisplayName(node)}`}
-            >
-              <span className="pb-chord-roman">{chordDisplayRoman(node)}</span>
-              <span className="pb-chord-name">{chordDisplayName(node)}</span>
-              <span className="pb-chord-quality">{chordQualityLabel(node)}</span>
-            </button>
-          ))}
-        </div>
-        {!isStarted && (
-          <p className="pb-hint">↑ Clique em um acorde para começar sua progressão</p>
+
+        {!isStarted ? (
+          <div className="pb2-prog-empty">
+            Escolha um acorde abaixo para começar
+          </div>
+        ) : (
+          <>
+            <div className="pb2-prog-row">
+              {progression.map((chord, i) => (
+                <span key={i} className="pb2-prog-item">
+                  <button
+                    className={`pb2-prog-chord pb-chord-${chord.quality} ${i === progression.length - 1 ? 'pb2-prog-active' : ''} ${chord.isBorrowed ? 'pb2-prog-borrowed' : ''}`}
+                    onClick={() => selectAtIndex(i)}
+                    title={i === progression.length - 1 ? 'Acorde atual' : 'Voltar a este ponto'}
+                  >
+                    <span className="pb2-pc-roman">{chordRoman(chord)}</span>
+                    <span className="pb2-pc-name">{chordName(chord)}</span>
+                    {chord.isBorrowed && (
+                      <span className="pb2-pc-borrow">{chord.borrowedFromShort}</span>
+                    )}
+                  </button>
+                  {i < progression.length - 1 && <span className="pb2-arrow">→</span>}
+                </span>
+              ))}
+              {activeChord && (
+                <span className="pb2-prog-item">
+                  <span className="pb2-arrow">→</span>
+                  <span className="pb2-cursor">?</span>
+                </span>
+              )}
+            </div>
+            {progression.length > 1 && (
+              <div className="pb2-prog-text">
+                {progression.map(c => {
+                  const n = chordName(c);
+                  return c.isBorrowed ? `${n}[${c.borrowedFromShort}]` : n;
+                }).join(' → ')}
+              </div>
+            )}
+          </>
         )}
       </section>
 
-      {/* Modal Borrowing Panel */}
-      <section className="pb-borrow">
-        <div className="pb-borrow-header">
-          <h3 className="pb-section-title pb-borrow-title">
-            Empréstimos Modais
-            <span className="pb-borrow-subtitle">acordes de modos paralelos de {rootNote}</span>
-          </h3>
-          <div className="pb-borrow-tabs">
-            {borrowedGroups.map(group => (
+      {/* ===== SUGESTÕES FUNCIONAIS (quando há acorde ativo) ===== */}
+      {suggestions && activeChord && (
+        <section className="pb2-next">
+          <div className="pb2-next-header">
+            <span className="pb2-label">
+              PRÓXIMO após{' '}
+              <span className={`pb2-active-name pb-chord-${activeChord.quality}`}>
+                {chordName(activeChord)}
+              </span>
+              {activeChord.isBorrowed && (
+                <span className="pb2-borrow-tag">empr. {activeChord.borrowedFromShort}</span>
+              )}
+            </span>
+          </div>
+
+          {/* Movimentos funcionais como linha compacta */}
+          {suggestions.functional.length > 0 && (
+            <div className="pb2-func-row">
+              {suggestions.functional.map((s, i) => (
+                <button
+                  key={i}
+                  className={`pb2-func-btn pb-chord-${s.node.quality} pb2-func-${s.style}`}
+                  onClick={() => addChord(s.node)}
+                  title={s.label}
+                >
+                  <span className="pb2-fb-roman">{chordRoman(s.node)}</span>
+                  <span className="pb2-fb-name">{chordName(s.node)}</span>
+                  <span className="pb2-fb-label">{s.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Padrões reconhecidos como badges compactas */}
+          {suggestions.progressionHints.length > 0 && (
+            <div className="pb2-patterns">
+              {suggestions.progressionHints.slice(0, 4).map((h, i) => (
+                <span key={i} className="pb2-pattern-badge">
+                  <span className="pb2-pattern-name">{h.name}</span>
+                  {h.suggestedDegree !== undefined && (
+                    <button
+                      className="pb2-pattern-suggest"
+                      onClick={() => addChord(nodes[h.suggestedDegree])}
+                    >
+                      → {chordName(nodes[h.suggestedDegree])}
+                    </button>
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ===== PICKER DE ACORDES (abas) ===== */}
+      <section className="pb2-picker">
+        <div className="pb2-picker-header">
+          <span className="pb2-label">
+            {rootNote} {scaleLabel}
+          </span>
+          <div className="pb2-tabs">
+            <button
+              className={`pb2-tab ${pickerTab === 'diatonic' ? 'pb2-tab-active' : ''}`}
+              onClick={() => setPickerTab('diatonic')}
+            >
+              Diatônico
+            </button>
+            <button
+              className={`pb2-tab ${pickerTab === 'modal' ? 'pb2-tab-active' : ''}`}
+              onClick={() => setPickerTab('modal')}
+            >
+              Empréstimos
+            </button>
+            <button
+              className={`pb2-tab ${pickerTab === 'secondary' ? 'pb2-tab-active' : ''} ${!activeChord ? 'pb2-tab-dim' : ''}`}
+              onClick={() => setPickerTab('secondary')}
+              title={!activeChord ? 'Selecione um acorde para ver dominantes secundários' : ''}
+            >
+              Dom. Sec.
+            </button>
+          </div>
+        </div>
+
+        {/* Sub-abas de modo para empréstimos */}
+        {pickerTab === 'modal' && (
+          <div className="pb2-modal-tabs">
+            {borrowedGroups.map(g => (
               <button
-                key={group.scale}
-                className={`pb-borrow-tab ${activeBorrowGroup?.scale === group.scale ? 'pb-borrow-tab-active' : ''}`}
-                onClick={() => setActiveBorrowMode(group.scale)}
-                title={group.label}
+                key={g.scale}
+                className={`pb2-modal-tab ${activeBorrowGroup?.scale === g.scale ? 'pb2-modal-tab-active' : ''}`}
+                onClick={() => setActiveBorrowMode(g.scale)}
               >
-                {group.shortLabel}
-                {group.exclusiveCount > 0 && (
-                  <span className="pb-borrow-tab-count">{group.exclusiveCount}</span>
+                {g.shortLabel}
+                {g.exclusiveCount > 0 && (
+                  <span className="pb2-modal-count">{g.exclusiveCount}</span>
                 )}
               </button>
             ))}
           </div>
-        </div>
-
-        {activeBorrowGroup && (
-          <div className="pb-borrow-body">
-            <div className="pb-borrow-legend">
-              <span className="pb-borrow-legend-exclusive">exclusivo</span>
-              <span className="pb-borrow-legend-shared">compartilhado</span>
-              <span className="pb-borrow-legend-text">— clique para adicionar à progressão</span>
-            </div>
-            <div className="pb-borrow-chords">
-              {activeBorrowGroup.nodes.map(node => (
-                <button
-                  key={node.id + '-' + node.degree}
-                  className={`pb-borrow-card pb-chord-${node.quality} ${node.isExclusive ? 'pb-borrow-exclusive' : 'pb-borrow-shared'}`}
-                  onClick={() => isStarted ? addChord(node) : startWithChord(node)}
-                  title={`${node.isExclusive ? 'Exclusivo de' : 'Compartilhado com'} ${activeBorrowGroup.label}`}
-                >
-                  <span className="pb-chord-roman">{chordDisplayRoman(node)}</span>
-                  <span className="pb-chord-name">{chordDisplayName(node)}</span>
-                  <span className="pb-chord-quality">{chordQualityLabel(node)}</span>
-                </button>
-              ))}
-            </div>
-          </div>
         )}
+
+        {/* Grade de acordes */}
+        <div className="pb2-palette">
+          {pickerTab === 'diatonic' && nodes.map(node => (
+            <button
+              key={node.id}
+              className={`pb2-chord pb-chord-${node.quality} ${activeChord?.id === node.id && activeChord?.degree === node.degree ? 'pb2-chord-active' : ''}`}
+              onClick={() => addChord(node)}
+            >
+              <span className="pb2-c-roman">{chordRoman(node)}</span>
+              <span className="pb2-c-name">{chordName(node)}</span>
+            </button>
+          ))}
+
+          {pickerTab === 'modal' && activeBorrowGroup?.nodes.map(node => (
+            <button
+              key={node.id + '-' + node.degree}
+              className={`pb2-chord pb-chord-${node.quality} ${node.isExclusive ? 'pb2-chord-excl' : 'pb2-chord-shared'}`}
+              onClick={() => addChord(node)}
+              title={`${node.isExclusive ? 'Exclusivo de' : 'Compartilhado com'} ${activeBorrowGroup.label}`}
+            >
+              <span className="pb2-c-roman">{chordRoman(node)}</span>
+              <span className="pb2-c-name">{chordName(node)}</span>
+              {node.isExclusive && <span className="pb2-c-tag">●</span>}
+            </button>
+          ))}
+
+          {pickerTab === 'secondary' && !activeChord && (
+            <div className="pb2-palette-empty">
+              Adicione um acorde à progressão para ver os dominantes secundários disponíveis
+            </div>
+          )}
+
+          {pickerTab === 'secondary' && activeChord && suggestions?.secondary.map(s => (
+            <button
+              key={s.id + '->' + s.resolvesToId}
+              className="pb2-chord pb-chord-dominant7"
+              onClick={() => addChord(s)}
+              title={s.label}
+            >
+              <span className="pb2-c-roman">{s.roman}</span>
+              <span className="pb2-c-name">{s.id}</span>
+              <span className="pb2-c-resolve">→ {useTetrads ? (s.resolvesToNode?.name7 || s.resolvesToId) : s.resolvesToId}</span>
+            </button>
+          ))}
+        </div>
       </section>
 
-      {/* Suggestions Panel */}
-      {suggestions && activeChord && (
-        <section className="pb-suggestions">
-          <h3 className="pb-section-title">
-            Próximos acordes a partir de{' '}
-            <span className={`pb-active-badge pb-chord-${activeChord.quality || 'major'}`}>
-              {chordDisplayRoman(activeChord)} — {chordDisplayName(activeChord)}
-            </span>
-            {activeChord.isBorrowed && (
-              <span className="pb-borrowed-source-badge">empr. {activeChord.borrowedFromShort}</span>
-            )}
-          </h3>
-
-          {/* Progression hints */}
-          {suggestions.progressionHints.length > 0 && (
-            <div className="pb-hints-bar">
-              {suggestions.progressionHints.map((h, i) => (
-                <span key={i} className="pb-prog-hint">
-                  🎵 Você está dentro de uma progressão <strong>{h.name}</strong>
-                  {h.suggestedDegree !== undefined && (
-                    <> — próximo sugerido: <strong>{chordDisplayName(nodes[h.suggestedDegree])}</strong></>
-                  )}
-                </span>
-              ))}
-            </div>
-          )}
-
-          <div className="pb-suggestion-groups">
-            {/* Functional movements */}
-            <div className="pb-suggestion-group">
-              <h4 className="pb-group-title">Movimentos Funcionais e Cadências</h4>
-              <div className="pb-suggestion-list">
-                {suggestions.functional.map((s, i) => (
-                  <button
-                    key={i}
-                    className={`pb-suggestion pb-suggestion-${s.style} pb-chord-${s.node.quality}`}
-                    onClick={() => addChord(s.node)}
-                    title={s.label}
-                  >
-                    <span className="pb-sug-roman">{chordDisplayRoman(s.node)}</span>
-                    <span className="pb-sug-name">{chordDisplayName(s.node)}</span>
-                    <span className="pb-sug-label">{s.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* All diatonic chords */}
-            <div className="pb-suggestion-group">
-              <h4 className="pb-group-title">Campo Harmônico (todos os acordes)</h4>
-              <div className="pb-suggestion-list">
-                {suggestions.diatonic.map(node => (
-                  <button
-                    key={node.id}
-                    className={`pb-suggestion pb-chord-${node.quality}`}
-                    onClick={() => addChord(node)}
-                  >
-                    <span className="pb-sug-roman">{chordDisplayRoman(node)}</span>
-                    <span className="pb-sug-name">{chordDisplayName(node)}</span>
-                    <span className="pb-sug-label">{chordQualityLabel(node)}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Secondary dominants */}
-            <div className="pb-suggestion-group">
-              <h4 className="pb-group-title">Dominantes Secundários (cromatismo)</h4>
-              <div className="pb-suggestion-list">
-                {suggestions.secondary.map(s => (
-                  <button
-                    key={s.id + '->' + s.resolvesToId}
-                    className="pb-suggestion pb-chord-dominant7"
-                    onClick={() => addChord(s)}
-                    title={s.label}
-                  >
-                    <span className="pb-sug-roman">{s.roman}</span>
-                    <span className="pb-sug-name">{s.id}</span>
-                    <span className="pb-sug-label">→ {useTetrads ? (s.resolvesToNode?.name7 || s.resolvesToId) : s.resolvesToId}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Progression Timeline */}
-      {progression.length > 0 && (
-        <section className="pb-timeline">
-          <div className="pb-timeline-header">
-            <h3 className="pb-section-title">Progressão</h3>
-            <button className="pb-clear-btn" onClick={clearProgression}>Limpar</button>
-          </div>
-          <div className="pb-timeline-scroll">
-            <div className="pb-timeline-chords">
-              {progression.map((chord, i) => (
-                <span key={i} className="pb-timeline-item">
-                  <button
-                    className={`pb-timeline-chord pb-chord-${chord.quality || 'major'} ${i === progression.length - 1 ? 'pb-timeline-active' : ''} ${chord.isBorrowed ? 'pb-timeline-borrowed' : ''}`}
-                    onClick={() => selectInProgression(i)}
-                    title={`${chordDisplayRoman(chord)} — ${chordDisplayName(chord)}${chord.isBorrowed ? ` (empr. ${chord.borrowedFromShort})` : ''}${i === progression.length - 1 ? '\n(acorde atual)' : '\nClique para voltar a este ponto'}`}
-                  >
-                    <span className="pb-tl-roman">{chordDisplayRoman(chord) || chordDisplayName(chord)}</span>
-                    <span className="pb-tl-name">{chordDisplayName(chord)}</span>
-                    {chord.isBorrowed && (
-                      <span className="pb-tl-borrow-badge">{chord.borrowedFromShort}</span>
-                    )}
-                  </button>
-                  {i < progression.length - 1 && (
-                    <span className="pb-arrow">→</span>
-                  )}
-                </span>
-              ))}
-              {activeChord && (
-                <span className="pb-timeline-cursor">
-                  <span className="pb-arrow">→</span>
-                  <span className="pb-cursor-label">?</span>
-                </span>
-              )}
-            </div>
-          </div>
-          {progression.length > 1 && (
-            <div className="pb-timeline-text">
-              {progression.map(c => {
-                const name = chordDisplayName(c);
-                return c.isBorrowed ? `${name}[${c.borrowedFromShort}]` : name;
-              }).join(' → ')}
-            </div>
-          )}
-        </section>
-      )}
     </div>
   );
 }

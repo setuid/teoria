@@ -1497,3 +1497,418 @@ body {
   color: var(--text);
   line-height: 1.5;
 }
+
+/* ============================================================
+   PROGRESSION BUILDER v2 — redesigned layout
+   ============================================================ */
+
+.pb2 {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding: 0 0 24px;
+}
+
+/* Shared label style */
+.pb2-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ---- PROGRESSÃO ---- */
+.pb2-prog {
+  padding: 16px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.pb2-prog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.pb2-clear-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 3px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.pb2-clear-btn:hover {
+  color: #e74c3c;
+  border-color: rgba(231, 76, 60, 0.4);
+}
+
+.pb2-prog-empty {
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 8px 0;
+}
+
+.pb2-prog-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 72px;
+}
+
+.pb2-prog-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pb2-prog-chord {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  background: var(--surface2);
+  transition: transform 0.1s, opacity 0.15s;
+  min-width: 68px;
+}
+.pb2-prog-chord:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+.pb2-prog-active {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(240, 165, 0, 0.15);
+}
+.pb2-prog-borrowed {
+  border-style: dashed;
+}
+
+.pb2-pc-roman {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.pb2-pc-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+.pb2-pc-borrow {
+  font-size: 9px;
+  color: #9b59b6;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.pb2-arrow {
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.pb2-cursor {
+  font-size: 22px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  font-weight: 300;
+}
+
+.pb2-prog-text {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: monospace;
+  letter-spacing: 0.03em;
+}
+
+/* ---- SUGESTÕES FUNCIONAIS ---- */
+.pb2-next {
+  padding: 14px 24px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.pb2-next-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pb2-active-name {
+  font-weight: 700;
+  font-size: 13px;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.pb2-borrow-tag {
+  font-size: 10px;
+  color: #9b59b6;
+  background: rgba(155, 89, 182, 0.15);
+  border: 1px solid rgba(155, 89, 182, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.pb2-func-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pb2-func-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: var(--surface);
+  transition: transform 0.1s, filter 0.1s;
+}
+.pb2-func-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+}
+.pb2-fb-roman {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.pb2-fb-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.pb2-fb-label {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* Functional style variants */
+.pb2-func-strong { border-color: rgba(240, 165, 0, 0.35); }
+.pb2-func-weak   { border-color: var(--border); }
+
+/* Pattern hints */
+.pb2-patterns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pb2-pattern-badge {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  font-size: 11px;
+}
+
+.pb2-pattern-name {
+  padding: 3px 10px;
+  color: var(--text-muted);
+}
+
+.pb2-pattern-suggest {
+  background: var(--surface);
+  border: none;
+  border-left: 1px solid var(--border);
+  color: var(--accent);
+  padding: 3px 10px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+.pb2-pattern-suggest:hover {
+  background: rgba(240, 165, 0, 0.1);
+}
+
+/* ---- PICKER DE ACORDES ---- */
+.pb2-picker {
+  padding: 14px 24px 8px;
+  flex-shrink: 0;
+}
+
+.pb2-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.pb2-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface2);
+  padding: 3px;
+  border-radius: 8px;
+}
+
+.pb2-tab {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 5px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+.pb2-tab:hover {
+  color: var(--text);
+}
+.pb2-tab-active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.pb2-tab-dim {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Sub-tabs para empréstimos modais */
+.pb2-modal-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.pb2-modal-tab {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 3px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+.pb2-modal-tab:hover {
+  color: var(--text);
+}
+.pb2-modal-tab-active {
+  background: rgba(155, 89, 182, 0.2);
+  border-color: rgba(155, 89, 182, 0.5);
+  color: #c39ad6;
+}
+.pb2-modal-count {
+  font-size: 10px;
+  background: rgba(155, 89, 182, 0.3);
+  color: #c39ad6;
+  padding: 0 5px;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+/* Grade compacta de acordes */
+.pb2-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.pb2-palette-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+.pb2-chord {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 14px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: var(--surface2);
+  min-width: 72px;
+  transition: transform 0.1s, filter 0.1s;
+}
+.pb2-chord:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.15);
+}
+.pb2-chord-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(240, 165, 0, 0.2);
+}
+.pb2-chord-excl {
+  border-color: rgba(155, 89, 182, 0.5);
+}
+.pb2-chord-shared {
+  border-color: rgba(155, 89, 182, 0.2);
+  opacity: 0.7;
+}
+
+.pb2-c-roman {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.pb2-c-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.pb2-c-resolve {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.pb2-c-tag {
+  font-size: 8px;
+  color: #9b59b6;
+}
+
+/* ---- Chord quality colors (shared with original pb- classes) ---- */
+.pb2-prog-chord.pb-chord-major,
+.pb2-func-btn.pb-chord-major,
+.pb2-chord.pb-chord-major      { border-color: rgba(240, 165, 0, 0.25); }
+
+.pb2-prog-chord.pb-chord-minor,
+.pb2-func-btn.pb-chord-minor,
+.pb2-chord.pb-chord-minor      { border-color: rgba(74, 144, 217, 0.25); }
+
+.pb2-prog-chord.pb-chord-dominant7,
+.pb2-func-btn.pb-chord-dominant7,
+.pb2-chord.pb-chord-dominant7  { border-color: rgba(240, 165, 0, 0.35); }
+
+.pb2-prog-chord.pb-chord-diminished,
+.pb2-func-btn.pb-chord-diminished,
+.pb2-chord.pb-chord-diminished { border-color: rgba(231, 76, 60, 0.3); }
+
+/* Active name badge colors */
+.pb2-active-name.pb-chord-major      { background: rgba(240, 165, 0, 0.15);  color: var(--accent); }
+.pb2-active-name.pb-chord-minor      { background: rgba(74, 144, 217, 0.15); color: #4a90d9; }
+.pb2-active-name.pb-chord-dominant7  { background: rgba(240, 165, 0, 0.15);  color: var(--accent); }
+.pb2-active-name.pb-chord-diminished { background: rgba(231, 76, 60, 0.15);  color: #e74c3c; }
