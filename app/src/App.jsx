@@ -13,7 +13,7 @@ const DEFAULT_ROOT = 'A';
 const DEFAULT_SCALE = 'minor';
 
 export default function App() {
-  const [activeView, setActiveView] = useState('explorer');
+  const [activeView, setActiveView] = useState('builder');
   const [rootNote, setRootNote] = useState(DEFAULT_ROOT);
   const [scaleName, setScaleName] = useState(DEFAULT_SCALE);
   const [selectedChord, setSelectedChord] = useState(null);
