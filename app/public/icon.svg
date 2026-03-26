@@ -1,0 +1,38 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="62%">
+      <stop offset="0%" stop-color="#1e1800"/>
+      <stop offset="100%" stop-color="#0d0f14"/>
+    </radialGradient>
+    <filter id="glow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="0" stdDeviation="10"
+                    flood-color="#f0a500" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded square -->
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
+
+  <!-- Musical staff (5 lines, subtle) -->
+  <g stroke="#f0a500" stroke-width="9" opacity="0.18" stroke-linecap="round">
+    <line x1="52" y1="254" x2="460" y2="254"/>
+    <line x1="52" y1="292" x2="460" y2="292"/>
+    <line x1="52" y1="330" x2="460" y2="330"/>
+    <line x1="52" y1="368" x2="460" y2="368"/>
+    <line x1="52" y1="406" x2="460" y2="406"/>
+  </g>
+
+  <!-- Beamed eighth notes -->
+  <g fill="#f0a500" filter="url(#glow)">
+    <!-- Beam connecting the two stems -->
+    <polygon points="210,152 402,110 402,138 210,180"/>
+    <!-- Stem 1 -->
+    <rect x="203" y="150" width="15" height="192"/>
+    <!-- Stem 2 -->
+    <rect x="394" y="108" width="15" height="192"/>
+    <!-- Note head 1 (tilted ellipse, sits on staff) -->
+    <ellipse cx="163" cy="358" rx="56" ry="40" transform="rotate(-20 163 358)"/>
+    <!-- Note head 2 -->
+    <ellipse cx="353" cy="316" rx="56" ry="40" transform="rotate(-20 353 316)"/>
+  </g>
+</svg>
