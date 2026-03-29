@@ -1,161 +1,149 @@
-import { useState, useMemo } from 'react';
-import Controls from './components/Controls';
-import HarmonicGraph from './components/HarmonicGraph';
-import ChordPanel from './components/ChordPanel';
-import SequenceAnalyzer from './components/SequenceAnalyzer';
-import ProgressionBuilder from './components/ProgressionBuilder';
-import ChangelogModal from './components/ChangelogModal';
-import { buildHarmonicField, toTeoriaNote, AVAILABLE_SCALES } from './lib/harmonicField';
-import { CURRENT_VERSION } from './lib/changelog';
+import { useState, useMemo, useCallback } from 'react';
+import SessionHeader from './components/SessionHeader';
+import SongStructure from './components/SongStructure';
+import ChordPalette from './components/ChordPalette';
+import MelodyHelper from './components/MelodyHelper';
+import { buildHarmonicField, toTeoriaNote } from './lib/harmonicField';
+import { MOODS } from './lib/moodPresets';
+import { stopLoop } from './lib/audioEngine';
 import './App.css';
 
-const DEFAULT_ROOT = 'A';
-const DEFAULT_SCALE = 'minor';
+let _nextId = 1;
+function uid() { return `s${_nextId++}`; }
+
+function makeSection(name) {
+  return { id: uid(), name, chords: [], beatsPerChord: 4 };
+}
+
+const DEFAULT_MOOD = MOODS[0]; // Melancólico
 
 export default function App() {
-  const [activeView, setActiveView] = useState('builder');
-  const [rootNote, setRootNote] = useState(DEFAULT_ROOT);
-  const [scaleName, setScaleName] = useState(DEFAULT_SCALE);
-  const [selectedChord, setSelectedChord] = useState(null);
-  const [history, setHistory] = useState([]);
+  const [rootNote, setRootNote]   = useState(DEFAULT_MOOD.root);
+  const [scaleName, setScaleName] = useState(DEFAULT_MOOD.scale);
+  const [bpm, setBpm]             = useState(DEFAULT_MOOD.bpm);
   const [useTetrads, setUseTetrads] = useState(true);
-  const [showChangelog, setShowChangelog] = useState(false);
+  const [looping, setLooping]     = useState(false);
+
+  const [sections, setSections]       = useState(() => [makeSection('Verso'), makeSection('Refrão')]);
+  const [activeSectionId, setActiveSectionId] = useState(() => sections[0]?.id ?? null);
+  const [activeChord, setActiveChord] = useState(null);  // chord selected for melody guide
 
   const field = useMemo(() => {
     try {
       return buildHarmonicField(toTeoriaNote(rootNote), scaleName);
-    } catch (e) {
-      console.error('Error building harmonic field:', e);
+    } catch {
       return null;
     }
   }, [rootNote, scaleName]);
 
-  const scaleLabel = AVAILABLE_SCALES.find(s => s.value === scaleName)?.label || scaleName;
-
-  function handleChange(newRoot, newScale) {
+  // When field changes (key/scale), clear chord selections
+  const handleFieldChange = useCallback((newRoot, newScale) => {
+    stopLoop();
+    setLooping(false);
     setRootNote(newRoot);
     setScaleName(newScale);
-    setSelectedChord(null);
-  }
+    setActiveChord(null);
+  }, []);
 
-  function handleSelectChord(chord) {
-    setSelectedChord(chord);
-  }
+  const handleMoodSelect = useCallback((mood) => {
+    stopLoop();
+    setLooping(false);
+    setRootNote(mood.root);
+    setScaleName(mood.scale);
+    setBpm(mood.bpm);
+    setActiveChord(null);
+  }, []);
 
-  // Navigate: use a chord as the new tonic (modulate)
-  function handleNavigate(node) {
-    const newRoot = node.root[0].toUpperCase() + node.root.slice(1);
-    setHistory(h => [...h, { rootNote, scaleName }]);
-    setRootNote(newRoot);
-    // Keep same scale type for exploration
-    setSelectedChord(null);
-  }
+  const handleLoopChange = useCallback((isLooping) => {
+    setLooping(isLooping);
+  }, []);
 
-  function handleBack() {
-    if (history.length === 0) return;
-    const prev = history[history.length - 1];
-    setHistory(h => h.slice(0, -1));
-    setRootNote(prev.rootNote);
-    setScaleName(prev.scaleName);
-    setSelectedChord(null);
-  }
+  // Add a chord to the active section
+  const handleAddChord = useCallback((chordNode) => {
+    setSections(secs => secs.map(s =>
+      s.id === activeSectionId
+        ? { ...s, chords: [...s.chords, chordNode] }
+        : s
+    ));
+    setActiveChord(chordNode);
+  }, [activeSectionId]);
+
+  // Replace progression of a section
+  const handleUpdateSection = useCallback((sectionId, updatedSection) => {
+    setSections(secs => secs.map(s => s.id === sectionId ? updatedSection : s));
+  }, []);
+
+  const handleAddSection = useCallback((name) => {
+    const section = makeSection(name);
+    setSections(secs => [...secs, section]);
+    setActiveSectionId(section.id);
+  }, []);
+
+  const handleRemoveSection = useCallback((sectionId) => {
+    setSections(secs => {
+      const next = secs.filter(s => s.id !== sectionId);
+      if (activeSectionId === sectionId && next.length > 0) {
+        setActiveSectionId(next[0].id);
+      }
+      return next;
+    });
+  }, [activeSectionId]);
+
+  const activeSection = sections.find(s => s.id === activeSectionId) ?? null;
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <div className="app-title">
-          <span className="app-title-main">Teoria Harmônica</span>
-          <button className="app-version-btn" onClick={() => setShowChangelog(true)} title="Ver histórico de versões">
-            <span className="app-title-sub">teoria.js</span>
-            <span className="app-version-tag">v{CURRENT_VERSION}</span>
-          </button>
+    <div className="app session-app">
+      <SessionHeader
+        rootNote={rootNote}
+        scaleName={scaleName}
+        bpm={bpm}
+        useTetrads={useTetrads}
+        looping={looping}
+        sections={sections}
+        activeSectionId={activeSectionId}
+        field={field}
+        onMoodSelect={handleMoodSelect}
+        onFieldChange={handleFieldChange}
+        onBpmChange={setBpm}
+        onToggleTetrads={() => setUseTetrads(t => !t)}
+        onLoopChange={handleLoopChange}
+      />
+
+      <div className="session-body">
+        <div className="session-main">
+          <SongStructure
+            sections={sections}
+            activeSectionId={activeSectionId}
+            activeChord={activeChord}
+            bpm={bpm}
+            useTetrads={useTetrads}
+            onSelectSection={setActiveSectionId}
+            onUpdateSection={handleUpdateSection}
+            onRemoveSection={handleRemoveSection}
+            onAddSection={handleAddSection}
+            onSelectChord={setActiveChord}
+            onLoopChange={handleLoopChange}
+          />
         </div>
 
-        <nav className="view-tabs">
-          <button
-            className={`tab-btn ${activeView === 'explorer' ? 'active' : ''}`}
-            onClick={() => setActiveView('explorer')}
-          >
-            Explorador
-          </button>
-          <button
-            className={`tab-btn ${activeView === 'builder' ? 'active' : ''}`}
-            onClick={() => setActiveView('builder')}
-          >
-            Construtor
-          </button>
-          <button
-            className={`tab-btn ${activeView === 'analyzer' ? 'active' : ''}`}
-            onClick={() => setActiveView('analyzer')}
-          >
-            Analisador
-          </button>
-        </nav>
+        <div className="session-sidebar">
+          <MelodyHelper
+            activeChord={activeChord}
+            field={field}
+            useTetrads={useTetrads}
+          />
+        </div>
+      </div>
 
-        {(activeView === 'explorer' || activeView === 'builder') && (
-          <div className="header-field-info">
-            Campo de <strong>{rootNote} {scaleLabel}</strong>
-          </div>
-        )}
-
-        {activeView === 'explorer' && history.length > 0 && (
-          <button className="back-btn" onClick={handleBack}>
-            ← Voltar
-          </button>
-        )}
-      </header>
-
-      {(activeView === 'explorer' || activeView === 'builder') && (
-        <Controls
-          rootNote={rootNote}
-          scaleName={scaleName}
-          onChange={handleChange}
+      <div className="session-palette">
+        <ChordPalette
+          field={field}
+          activeChord={activeChord}
           useTetrads={useTetrads}
-          onToggleTetrads={() => setUseTetrads(t => !t)}
+          hasActiveSection={!!activeSection}
+          onAddChord={handleAddChord}
         />
-      )}
-
-      <main className="app-main">
-        {activeView === 'explorer' ? (
-          <>
-            <div className="graph-container">
-              {field ? (
-                <HarmonicGraph
-                  field={field}
-                  selectedId={selectedChord?.id}
-                  onSelect={handleSelectChord}
-                  useTetrads={useTetrads}
-                />
-              ) : (
-                <div className="graph-error">Erro ao construir o campo harmônico.</div>
-              )}
-            </div>
-            <aside className="panel-container">
-              <ChordPanel
-                chord={selectedChord}
-                field={field}
-                onNavigate={handleNavigate}
-                useTetrads={useTetrads}
-              />
-            </aside>
-          </>
-        ) : activeView === 'builder' ? (
-          <div className="builder-container">
-            <ProgressionBuilder
-              field={field}
-              rootNote={rootNote}
-              scaleName={scaleName}
-              useTetrads={useTetrads}
-            />
-          </div>
-        ) : (
-          <div className="analyzer-container">
-            <SequenceAnalyzer />
-          </div>
-        )}
-      </main>
-
-      {showChangelog && <ChangelogModal onClose={() => setShowChangelog(false)} />}
+      </div>
     </div>
   );
 }
